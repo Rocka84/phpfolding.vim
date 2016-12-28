@@ -57,7 +57,7 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
-" Avoid reloading {{{1
+" Avoid reloading 
 if exists('loaded_phpfolding')
 	" ftplugin section
 	if !get(g:, 'DisableAutoPHPFolding', 0)
@@ -70,20 +70,28 @@ if exists('loaded_phpfolding')
 endif
 
 let loaded_phpfolding = 1
-" }}}
+" 
 
-" .vimrc variable to disable autofolding for php files {{{1
+" .vimrc variable to disable autofolding for php files 
 if !exists("g:DisableAutoPHPFolding")
 	let g:DisableAutoPHPFolding = 0
 endif
+
+if !exists("g:DisablePHPFoldingIncludes")
+	let g:DisablePHPFoldingIncludes = 0
+endif
+
+if !exists("g:DisablePHPFoldingProperties")
+	let g:DisablePHPFoldingProperties = 0
+endif
+
 let g:DisablePHPFoldingClass = get(g:, 'DisablePHPFoldingClass', 1)
-" }}}
 
 command! EnableFastPHPFolds call <SID>EnableFastPHPFolds()
 command! -nargs=* EnablePHPFolds call <SID>EnablePHPFolds(<f-args>)
 command! DisablePHPFolds call <SID>DisablePHPFolds()
 
-" {{{ Script configuration
+"  Script configuration
 " Display the following after the foldtext if a fold contains phpdoc
 let g:phpDocIncludedPostfix = '**'
 let g:phpDocBlockIncludedPostfix = '**#@+'
@@ -93,8 +101,8 @@ let g:phpDocBlockIncludedPostfix = '**#@+'
 let g:searchPhpDocLineCount = 1
 " .. search this # of empty lines that 'trail' the foldmatch
 let g:searchEmptyLinesPostfixing = 1
-" }}}
-" {{{ Script constants
+" 
+"  Script constants
 let s:synIDattr_exists = exists('*synIDattr')
 let s:TRUE = 1
 let s:FALSE = 0
@@ -104,13 +112,13 @@ let s:FOLD_WITH_PHPDOC = 1
 let s:FOLD_WITHOUT_PHPDOC = 2
 let s:SEARCH_PAIR_START_FIRST = 1
 let s:SEARCH_PAIR_IMMEDIATELY = 2
-" }}}
+" 
 
-function! s:EnableFastPHPFolds() " {{{
+function! s:EnableFastPHPFolds() " 
 	call s:EnablePHPFolds(s:FALSE)
 endfunction
-" }}}
-function! s:EnablePHPFolds(...) " {{{
+" 
+function! s:EnablePHPFolds(...) " 
 	let s:extensiveBracketChecking = s:TRUE
 
 	" Check function arguments
@@ -156,21 +164,21 @@ function! s:EnablePHPFolds(...) " {{{
 	endwhile
 
 	:redraw
-	echo s:foldsCreated . " fold(s) created"
+	" echo s:foldsCreated . " fold(s) created"
 
 	" Restore cursor
 	exec s:savedCursor
 
 endfunction
-" }}}
-function! s:DisablePHPFolds() " {{{
+" 
+function! s:DisablePHPFolds() " 
 	"setlocal foldmethod=manual
 	setlocal foldtext=
 	normal! zE
 	echo "php fold(s) deleted"
 endfunction
-" }}}
-function! s:PHPCustomFolds() " {{{
+" 
+function! s:PHPCustomFolds() " 
 	" NOTE: The two last parameters for functions PHPFoldProperties() and
 	"       PHPFoldPureBlock() overwrite: 'g:searchPhpDocLineCount' and
 	"       'g:searchEmptyLinesPostfixing'..
@@ -178,8 +186,16 @@ function! s:PHPCustomFolds() " {{{
 	" Fold function with PhpDoc (function foo() {})
 	call s:PHPFoldPureBlock('function', s:FOLD_WITH_PHPDOC)
 
-	" Fold class properties with PhpDoc (var $foo = NULL;)
-	call s:PHPFoldProperties('^\s*\(\(private\)\|\(public\)\|\(protected\)\|\(var\)\)\s\(static\s\)*\$', ";", s:FOLD_WITH_PHPDOC, 1, 1)
+	if !g:DisablePHPFoldingProperties
+        " Fold class properties with PhpDoc (var $foo = NULL;)
+        call s:PHPFoldProperties('^\s*\(\(private\)\|\(public\)\|\(protected\)\|\(var\)\)\s\(static\s\)*\$', ";", s:FOLD_WITH_PHPDOC, 1, 1)
+    endif
+
+	if !g:DisablePHPFoldingIncludes
+        " Fold includes with their PhpDoc
+        call s:PHPFoldProperties('^\s*require\s*', ";", s:FOLD_WITH_PHPDOC)
+        call s:PHPFoldProperties('^\s*include\s*', ";", s:FOLD_WITH_PHPDOC)
+    endif
 
 	if !g:DisablePHPFoldingClass
 		" Fold class without PhpDoc (class foo {})
@@ -192,23 +208,19 @@ function! s:PHPCustomFolds() " {{{
 	" Fold consts with their PhpDoc
 	call s:PHPFoldProperties('^\s*const\s\+', ";", s:FOLD_WITH_PHPDOC)
 
-	" Fold includes with their PhpDoc
-	call s:PHPFoldProperties('^\s*require\s*', ";", s:FOLD_WITH_PHPDOC)
-	call s:PHPFoldProperties('^\s*include\s*', ";", s:FOLD_WITH_PHPDOC)
-
 	" Fold GLOBAL Arrays with their PhpDoc (some PEAR packages use these)
 	call s:PHPFoldProperties('^\s*\$GLOBALS.*array\s*(', ";", s:FOLD_WITH_PHPDOC)
 
-	" Fold marker style comments ({{{ foo }}})
-	call s:PHPFoldMarkers('{{{', '}}}')
+	" Fold marker style comments ( foo )
+	call s:PHPFoldMarkers('', '')
 
 	" Fold PhpDoc "DocBlock" templates (#@+ foo #@-)
 	call s:PHPFoldMarkers('#@+', '#@-')
 
 	call s:PHPFoldUse()
 endfunction
-" }}}
-function! s:PHPFoldPureBlock(startPattern, ...) " {{{
+" 
+function! s:PHPFoldPureBlock(startPattern, ...) " 
 	let s:searchPhpDocLineCount = g:searchPhpDocLineCount
 	let s:searchEmptyLinesPostfixing = g:searchEmptyLinesPostfixing
 	let s:currentPhpDocMode = s:FOLD_WITH_PHPDOC
@@ -260,8 +272,8 @@ function! s:PHPFoldPureBlock(startPattern, ...) " {{{
 		normal! zR
 	endif
 endfunction
-" }}}
-function! s:PHPFoldMarkers(startPattern, endPattern, ...) " {{{
+" 
+function! s:PHPFoldMarkers(startPattern, endPattern, ...) " 
 	let s:currentPhpDocMode = s:FOLD_WITHOUT_PHPDOC
 
 	" Move to file end
@@ -298,8 +310,8 @@ function! s:PHPFoldMarkers(startPattern, endPattern, ...) " {{{
 		normal! zR
 	endif
 endfunction
-" }}}
-function! s:PHPFoldProperties(startPattern, endPattern, ...) " {{{
+" 
+function! s:PHPFoldProperties(startPattern, endPattern, ...) " 
 	let s:searchPhpDocLineCount = g:searchPhpDocLineCount
 	let s:searchEmptyLinesPostfixing = g:searchEmptyLinesPostfixing
 	let s:currentPhpDocMode = s:FOLD_WITH_PHPDOC
@@ -348,8 +360,8 @@ function! s:PHPFoldProperties(startPattern, endPattern, ...) " {{{
 		normal! zR
 	endif
 endfunction
-" }}}
-function! s:HandleFold() " {{{
+" 
+function! s:HandleFold() " 
 	if s:foldingMode == s:MODE_REMEMBER_FOLD_SETTINGS
 		" If we are in an actual fold..,
 		if foldlevel(s:lineStart) != 0
@@ -383,8 +395,8 @@ function! s:HandleFold() " {{{
 		let s:foldsCreated = s:foldsCreated + 1
 	endif
 endfunction
-" }}}
-function! s:FindPureBlockStart(startPattern) " {{{
+" 
+function! s:FindPureBlockStart(startPattern) " 
 	" When the startPattern is 'function', this following search will match:
 	"
 	" function foo($bar) {			function foo($bar)
@@ -406,8 +418,8 @@ function! s:FindPureBlockStart(startPattern) " {{{
 	endif
 	return line
 endfunction
-" }}}
-function! s:FindPatternStart(startPattern) " {{{
+" 
+function! s:FindPatternStart(startPattern) " 
 	" This function can match the line its on *again* if the cursor was
 	" restored.. hence we search twice if needed..
 	let currentLine = line('.')
@@ -417,8 +429,8 @@ function! s:FindPatternStart(startPattern) " {{{
 	endif
 	return line
 endfunction
-" }}}
-function! s:FindOptionalPHPDocComment() " {{{
+" 
+function! s:FindOptionalPHPDocComment() " 
 	" Is searching for PHPDoc disabled?
 	if s:currentPhpDocMode == s:FOLD_WITHOUT_PHPDOC
 		" .. Return the original Fold's start
@@ -464,8 +476,8 @@ function! s:FindOptionalPHPDocComment() " {{{
 	" .. Return the original Fold's start
 	return s:lineStart
 endfunction
-" }}}
-function! s:FindPureBlockEnd(startPair, endPair, searchStartPairFirst, ...) " {{{
+" 
+function! s:FindPureBlockEnd(startPair, endPair, searchStartPairFirst, ...) " 
 	" Place Cursor on the opening pair/brace?
 	if a:searchStartPairFirst == s:SEARCH_PAIR_START_FIRST
 		let line = search(a:startPair, 'W')
@@ -508,8 +520,8 @@ function! s:FindPureBlockEnd(startPair, endPair, searchStartPairFirst, ...) " {{
 
 	return line
 endfunction
-" }}}
-function! s:FindPatternEnd(endPattern) " {{{
+" 
+function! s:FindPatternEnd(endPattern) " 
 	let line = search(a:endPattern, 'W')
 
 	" If the fold exceeds more than one line
@@ -527,8 +539,8 @@ function! s:FindPatternEnd(endPattern) " {{{
 
 	return line
 endfunction
-" }}}
-function! s:PHPFoldUse() " {{{
+" 
+function! s:PHPFoldUse() " 
 	exec 0
 	while 1
 		let lineStart = search("^\s*use", "W")
@@ -554,21 +566,21 @@ function! s:PHPFoldUse() " {{{
 		exec s:lineStop + 1
 	endwhile
 endfunction
-" }}}
-function! PHPFoldText() " {{{
+" 
+function! PHPFoldText() " 
 	let currentLine = v:foldstart
 	let lines = (v:foldend - v:foldstart + 1)
 	let lineString = getline(currentLine)
 	" See if we folded a marker
-	if strridx(lineString, "{{{") != -1 " }}}
+	if strridx(lineString, ") != -1 " 
 		" Is there text after the fold opener?
-		if (matchstr(lineString, '^.*{{{..*$') == lineString) " }}}
+		if (matchstr(lineString, '^.*..*$') == lineString) " 
 			" Then only show that text
-			let lineString = substitute(lineString, '^.*{{{', '', 'g') " }}}
+			let lineString = substitute(lineString, '^.*', '', 'g') " 
 			" There is text before the fold opener
 		else
 			" Try to strip away the remainder
-			let lineString = substitute(lineString, '\s*{{{.*$', '', 'g') " }}}
+			let lineString = substitute(lineString, '\s*.*$', '', 'g') " 
 		endif
 		" See if we folded a DocBlock
 	elseif strridx(lineString, '#@+') != -1
@@ -623,8 +635,8 @@ function! PHPFoldText() " {{{
 	" Return the foldtext
 	return "+--".lines." lines: " . lineString
 endfunction
-" }}}
-function! SkipMatch() " {{{
+" 
+function! SkipMatch() " 
 	" This function is modified from a PHP indent file by John Wellesz
 	" found here: http://www.vim.org/scripts/script.php?script_id=1120
 	if (!s:synIDattr_exists)
@@ -637,22 +649,22 @@ function! SkipMatch() " {{{
 		return 1
 	endif
 endfun
-" }}}
+" 
 
-" " Check filetype == php before automatically creating (fast) folds {{{1
+" " Check filetype == php before automatically creating (fast) folds 
 " function! s:CheckAutocmdEnablePHPFold()
 "     if &filetype == "php" && ! g:DisableAutoPHPFolding
 "         call s:EnableFastPHPFolds()
 "     endif
 " endfunction
-" " }}}
+" " 
 
-" " Call CheckAutocmdEnablePHPFold on BufReadPost {{{1
+" " Call CheckAutocmdEnablePHPFold on BufReadPost 
 " augroup SetPhpFolds
 "     au!
 "     au BufReadPost * call s:CheckAutocmdEnablePHPFold()
 " augroup END
-" " }}}
+" " 
 
 " ftplugin section
 if !get(g:, 'DisableAutoPHPFolding', 0)
